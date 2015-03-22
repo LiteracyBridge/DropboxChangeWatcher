@@ -1,4 +1,7 @@
 apply plugin: 'java'
+apply plugin: 'application'
+
+mainClassName = "org.literacybridge.dcp.DropboxChangeProcessor"
 
 sourceCompatibility = 1.8
 version = '1.0'
@@ -14,4 +17,10 @@ dependencies {
 
 task wrapper(type: Wrapper) {
     gradleVersion = '2.3'
+}
+
+run {
+    if (project.hasProperty('args')) {
+        args project.args.split('\\s')
+    }
 }

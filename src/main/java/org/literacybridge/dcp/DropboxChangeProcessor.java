@@ -20,25 +20,6 @@ import java.util.Locale;
  */
 public class DropboxChangeProcessor {
 
-    /**
-     * The standard HttpRequestor in the Dropbox API times out after 35 seconds, but longpoll reads can be as long as
-     * the longpoll timeout PLUS 90 seconds. Make the read timeout at least longpoll timeout, plus 90, plus a bonus
-     * 5 for good luck.
-     */
-    private static final class MyHttpRequestor extends StandardHttpRequestor {
-        private int readTimeoutSeconds;
-
-        private MyHttpRequestor(int longpollTimeout) {
-            this.readTimeoutSeconds = longpollTimeout + 95;
-        }
-
-        @Override
-        protected void configureConnection(HttpsURLConnection conn) throws IOException {
-            super.configureConnection(conn);
-            conn.setReadTimeout(readTimeoutSeconds * 1000);
-        }
-    }
-
     public static void main(String[] args) throws IOException, DbxException, InterruptedException {
 
         if (args.length != 1) {
@@ -61,15 +42,7 @@ public class DropboxChangeProcessor {
                 Locale.getDefault().toString(), new MyHttpRequestor(dcpConfig.getPollTimeout()));
 
         if (dcpConfig.getAccessToken() == null) {
-            DbxWebAuthNoRedirect webAuth = new DbxWebAuthNoRedirect(config, appInfo);
-            String authorizeUrl = webAuth.start();
-            System.out.println("1. Go to: " + authorizeUrl);
-            System.out.println("2. Click \"Allow\" (you might have to log in first)");
-            System.out.print("3. Copy the authorization code and enter here: ");
-            String code = new BufferedReader(new InputStreamReader(System.in)).readLine().trim();
-            DbxAuthFinish authFinish = webAuth.finish(code);
-            System.out.println("Access token is '" + authFinish.accessToken + "'");
-            System.out.println("Add this to the properties file as a property named 'dropbox-access-token'.");
+            generateOAuthAccessToken(appInfo, config);
             System.exit(0);
         }
 
@@ -89,6 +62,18 @@ public class DropboxChangeProcessor {
             }
             Thread.sleep(longpollResponse.backoff * 1000);
         }
+    }
+
+    private static void generateOAuthAccessToken(DbxAppInfo appInfo, DbxRequestConfig config) throws IOException, DbxException {
+        DbxWebAuthNoRedirect webAuth = new DbxWebAuthNoRedirect(config, appInfo);
+        String authorizeUrl = webAuth.start();
+        System.out.println("1. Go to: " + authorizeUrl);
+        System.out.println("2. Click \"Allow\" (you might have to log in first)");
+        System.out.print("3. Copy the authorization code and enter here: ");
+        String code = new BufferedReader(new InputStreamReader(System.in)).readLine().trim();
+        DbxAuthFinish authFinish = webAuth.finish(code);
+        System.out.println("Access token is '" + authFinish.accessToken + "'");
+        System.out.println("Add this to the properties file as a property named 'dropbox-access-token'.");
     }
 
     private static JsonReader<String> CursorReader = new JsonReader<String>() {
@@ -210,4 +195,25 @@ public class DropboxChangeProcessor {
 
         return delta.cursor;
     }
+
+    /**
+     * The standard HttpRequestor in the Dropbox API times out after 35 seconds, but longpoll reads can be as long as
+     * the longpoll timeout PLUS 90 seconds. Make the read timeout at least longpoll timeout, plus 90, plus a bonus
+     * 5 for good luck.
+     */
+    private static final class MyHttpRequestor extends StandardHttpRequestor {
+        private int readTimeoutSeconds;
+
+        private MyHttpRequestor(int longpollTimeout) {
+            this.readTimeoutSeconds = longpollTimeout + 95;
+        }
+
+        @Override
+        protected void configureConnection(HttpsURLConnection conn) throws IOException {
+            super.configureConnection(conn);
+            conn.setReadTimeout(readTimeoutSeconds * 1000);
+        }
+    }
+
+
 }
