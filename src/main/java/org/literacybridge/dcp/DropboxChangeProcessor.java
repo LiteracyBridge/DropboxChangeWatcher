@@ -1,4 +1,4 @@
-package org.literacybridge;
+package org.literacybridge.dcp;
 
 import com.dropbox.core.*;
 import com.dropbox.core.http.HttpRequestor;
