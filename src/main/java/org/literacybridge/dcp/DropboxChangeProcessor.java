@@ -2,6 +2,7 @@ package org.literacybridge.dcp;
 
 import com.dropbox.core.*;
 import com.dropbox.core.http.StandardHttpRequestor;
+import org.literacybridge.dcp.handlers.OutboxToInboxMoveHandler;
 
 import javax.net.ssl.HttpsURLConnection;
 import java.io.BufferedReader;
@@ -45,7 +46,10 @@ public class DropboxChangeProcessor {
 
         System.out.println("Linked account: " + client.getAccountInfo().displayName);
 
-        DropboxDeltaEventSource eventGenerator = new DropboxDeltaEventSource(client, dcpConfig);
+        DropboxDeltaEventDistributor distributor = new DropboxDeltaEventDistributor();
+        distributor.addHandler(new OutboxToInboxMoveHandler(client, dcpConfig));
+
+        DropboxDeltaEventSource eventGenerator = new DropboxDeltaEventSource(client, dcpConfig, distributor);
         eventGenerator.watchDropbox();
     }
 

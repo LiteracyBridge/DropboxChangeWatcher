@@ -8,7 +8,12 @@ import com.fasterxml.jackson.core.JsonLocation;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;
 
+import java.io.FileInputStream;
+import java.io.FileReader;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 /**
  * Created by jefflub on 3/22/15.
@@ -17,20 +22,23 @@ public class DropboxDeltaEventSource {
 
     DbxClient client;
     DcpConfiguration config;
+    DropboxDeltaEventDistributor distributor;
 
-    public DropboxDeltaEventSource(DbxClient client, DcpConfiguration config) {
+    public DropboxDeltaEventSource(DbxClient client, DcpConfiguration config, DropboxDeltaEventDistributor distributor) {
         this.client = client;
         this.config = config;
-
+        this.distributor = distributor;
     }
 
     public void watchDropbox() throws DbxException {
-        String cursor = null;
+        String cursor = readDeltaCursorFromFile();
 
-        // Read delta state
         // If no delta state, get latest cursor
         if (cursor == null) {
             cursor = getLatestDeltaCursor(client);
+            System.out.println("Latest delta cursor: " + cursor);
+        } else {
+            System.out.println("Read cursor from file: " + cursor);
         }
 
         // Poll
@@ -40,11 +48,40 @@ public class DropboxDeltaEventSource {
             if (longpollResponse.changes) {
                 cursor = processChanges(client, cursor);
             }
+            writeDeltaCursorToFile(cursor);
+
             try {
                 Thread.sleep(longpollResponse.backoff * 1000);
             } catch (InterruptedException ex) {
                 throw new RuntimeException("Thread interrupted!", ex);
             }
+        }
+    }
+
+    private String readDeltaCursorFromFile() {
+        if (config.getStateFileName() != null) {
+            try {
+                Path path = Paths.get(config.getStateFileName());
+                if (Files.exists(path))
+                    return new String(Files.readAllBytes(Paths.get(config.getStateFileName())));
+            } catch (IOException ex) {
+                // Should this fail, or just log and continue?
+                System.out.println("Read failed");
+                ex.printStackTrace();
+            }
+        }
+        return null;
+    }
+
+    private void writeDeltaCursorToFile(String cursor) {
+        Path path = Paths.get(config.getStateFileName());
+        try {
+            Files.write(path, cursor.getBytes());
+            System.out.println("Wrote cursor to file: " + cursor);
+        } catch (IOException e) {
+            // Fail? Continue?
+            System.out.println("Cursor write failed");
+            e.printStackTrace();
         }
     }
 
@@ -92,6 +129,7 @@ public class DropboxDeltaEventSource {
                     System.out.println("File deleted");
                 else
                     System.out.println("File added/changed");
+                distributor.distributeEvent(e.lcPath, e.metadata);
             }
             cursor = delta.cursor;
         } while (delta.hasMore);
