@@ -30,6 +30,7 @@ public abstract class AbstractDropboxDeltaEventHandler {
      * @throws DbxException
      */
     protected void getFile(String path) throws IOException, DbxException {
+        Files.createDirectories( Paths.get( dcpConfig.getTempDownloadDirectory() + path ).getParent() );
         FileOutputStream outputStream = new FileOutputStream(dcpConfig.getTempDownloadDirectory() + path);
         try {
             DbxEntry.File downloadedFile = dbxClient.getFile(path, null,

@@ -2,6 +2,7 @@ package org.literacybridge.dcp;
 
 import com.dropbox.core.*;
 import com.dropbox.core.http.StandardHttpRequestor;
+import org.literacybridge.dcp.handlers.FileDownloadingTestHandler;
 import org.literacybridge.dcp.handlers.OutboxToInboxMoveHandler;
 
 import javax.net.ssl.HttpsURLConnection;
@@ -48,6 +49,7 @@ public class DropboxChangeProcessor {
 
         DropboxDeltaEventDistributor distributor = new DropboxDeltaEventDistributor();
         distributor.addHandler(new OutboxToInboxMoveHandler(client, dcpConfig));
+        distributor.addHandler(new FileDownloadingTestHandler(client, dcpConfig));
 
         DropboxDeltaEventSource eventGenerator = new DropboxDeltaEventSource(client, dcpConfig, distributor);
         eventGenerator.watchDropbox();
