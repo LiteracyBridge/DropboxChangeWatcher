@@ -15,12 +15,14 @@ public class OutboxToInboxMoveHandler extends AbstractDropboxDeltaEventHandler {
     private String inboxRoot;
     private String outboxRoot;
     private Pattern outboxPattern;
+    private boolean outboxDryRun = false;
 
     public OutboxToInboxMoveHandler(DbxClient dbxClient, DcpConfiguration dcpConfig) {
         super(dbxClient, dcpConfig);
         inboxRoot = dcpConfig.getInboxRoot();
         outboxRoot = dcpConfig.getOutboxRoot();
         outboxPattern = Pattern.compile(dcpConfig.getOutboxRegex());
+        outboxDryRun = dcpConfig.isOutboxDryRun();
     }
 
     @Override
@@ -28,9 +30,10 @@ public class OutboxToInboxMoveHandler extends AbstractDropboxDeltaEventHandler {
         if ( metadata != null && metadata.isFile() && path.startsWith( outboxRoot ) && outboxPattern.matcher(path).matches() )
         {
             String newPath = path.replace( outboxRoot, inboxRoot );
-            System.out.println( "Moving " + path + " to " + newPath );
+            System.out.println( "Moving " + path + " to " + newPath + (outboxDryRun ? " *** SKIPPING..." : "" ) );
             try {
-                dbxClient.move( path, newPath );
+                if ( !outboxDryRun )
+                    dbxClient.move( path, newPath );
             } catch (DbxException e) {
                 System.out.println("Failed to move file");
                 e.printStackTrace();

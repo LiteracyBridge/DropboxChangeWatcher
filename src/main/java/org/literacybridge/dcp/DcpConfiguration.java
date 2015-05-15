@@ -56,4 +56,6 @@ public class DcpConfiguration {
     }
 
     public String getOutboxRegex() { return properties.getProperty("outbox-regex"); }
+
+    public boolean isOutboxDryRun() { return Boolean.parseBoolean( properties.getProperty("outbox-dry-run") ); }
 }
