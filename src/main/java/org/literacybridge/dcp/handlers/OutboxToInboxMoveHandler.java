@@ -23,6 +23,8 @@ public class OutboxToInboxMoveHandler extends AbstractDropboxDeltaEventHandler {
         outboxRoot = dcpConfig.getOutboxRoot();
         outboxPattern = Pattern.compile(dcpConfig.getOutboxRegex());
         outboxDryRun = dcpConfig.isOutboxDryRun();
+        if ( outboxDryRun )
+            System.out.println("OutboxToInbox handler running in dry-run mode" );
     }
 
     @Override
