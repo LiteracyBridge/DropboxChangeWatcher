@@ -41,6 +41,8 @@ public class DcpConfiguration {
         return properties.getProperty("state-file");
     }
 
+    public boolean isOneTimeRun() { return Boolean.parseBoolean( properties.getProperty("one-time-run") ); }
+
     public String getTempDownloadDirectory() {
         return properties.getProperty("temp-download-dir");
     }
@@ -52,4 +54,6 @@ public class DcpConfiguration {
     public String getOutboxRoot() {
         return properties.getProperty("outbox-root");
     }
+
+    public String getOutboxRegex() { return properties.getProperty("outbox-regex"); }
 }

@@ -50,6 +50,9 @@ public class DropboxDeltaEventSource {
             }
             writeDeltaCursorToFile(cursor);
 
+            if ( config.isOneTimeRun() )
+                return;
+
             try {
                 Thread.sleep(longpollResponse.backoff * 1000);
             } catch (InterruptedException ex) {
