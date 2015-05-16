@@ -7,6 +7,8 @@ import com.dropbox.core.json.JsonReader;
 import com.fasterxml.jackson.core.JsonLocation;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.FileInputStream;
 import java.io.FileReader;
@@ -19,6 +21,7 @@ import java.nio.file.Paths;
  * Created by jefflub on 3/22/15.
  */
 public class DropboxDeltaEventSource {
+    final static Logger logger = LoggerFactory.getLogger(DropboxDeltaEventSource.class);
 
     DbxClient client;
     DcpConfiguration config;
@@ -36,15 +39,15 @@ public class DropboxDeltaEventSource {
         // If no delta state, get latest cursor
         if (cursor == null) {
             cursor = getLatestDeltaCursor(client);
-            System.out.println("Latest delta cursor: " + cursor);
+            logger.debug("Latest delta cursor: {}", cursor);
         } else {
-            System.out.println("Read cursor from file: " + cursor);
+            logger.debug("Read cursor from file: {}", cursor);
         }
 
         // Poll
         while (true) {
             LongpollResponse longpollResponse = pollForChanges(client, cursor);
-            System.out.println("Response! Changes: " + longpollResponse.changes + " Backoff: " + longpollResponse.backoff);
+            logger.debug("Response! Changes: {}, Backoff: {}", longpollResponse.changes, longpollResponse.backoff);
             if (longpollResponse.changes) {
                 cursor = processChanges(client, cursor);
             }
@@ -69,8 +72,7 @@ public class DropboxDeltaEventSource {
                     return new String(Files.readAllBytes(Paths.get(config.getStateFileName())));
             } catch (IOException ex) {
                 // Should this fail, or just log and continue?
-                System.out.println("Read failed");
-                ex.printStackTrace();
+                logger.error( "Failed to read saved cursor", ex );
             }
         }
         return null;
@@ -80,11 +82,10 @@ public class DropboxDeltaEventSource {
         Path path = Paths.get(config.getStateFileName());
         try {
             Files.write(path, cursor.getBytes());
-            System.out.println("Wrote cursor to file: " + cursor);
+            logger.debug("Wrote cursor to file: {}", cursor);
         } catch (IOException e) {
             // Fail? Continue?
-            System.out.println("Cursor write failed");
-            e.printStackTrace();
+            logger.error( "Cursor write failed", e );
         }
     }
 
@@ -127,11 +128,11 @@ public class DropboxDeltaEventSource {
         do {
             delta = client.getDelta(cursor);
             for (DbxDelta.Entry<DbxEntry> e : delta.entries) {
-                System.out.println("Changed file: " + e.lcPath);
+                logger.debug("Changed file: {}", e.lcPath);
                 if (e.metadata == null)
-                    System.out.println("File deleted");
+                    logger.debug("File deleted");
                 else
-                    System.out.println("File added/changed");
+                    logger.debug("File added/changed");
                 distributor.distributeEvent(e.lcPath, e.metadata);
             }
             cursor = delta.cursor;

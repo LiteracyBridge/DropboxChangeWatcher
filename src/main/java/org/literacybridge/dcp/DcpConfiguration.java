@@ -41,21 +41,21 @@ public class DcpConfiguration {
         return properties.getProperty("state-file");
     }
 
-    public boolean isOneTimeRun() { return Boolean.parseBoolean( properties.getProperty("one-time-run") ); }
+    public boolean isOneTimeRun() { return Boolean.parseBoolean(properties.getProperty("one-time-run")); }
 
     public String getTempDownloadDirectory() {
         return properties.getProperty("temp-download-dir");
     }
 
-    public String getInboxRoot() {
-        return properties.getProperty("inbox-root");
+    public String getFileMoveDestinationRoot() {
+        return properties.getProperty("file-move-destination-root");
     }
 
-    public String getOutboxRoot() {
-        return properties.getProperty("outbox-root");
+    public String getFileMoveSourceRoot() {
+        return properties.getProperty("file-move-source-root");
     }
 
-    public String getOutboxRegex() { return properties.getProperty("outbox-regex"); }
+    public String getFileMoveFilterRegex() { return properties.getProperty("file-move-source-filter-regex"); }
 
-    public boolean isOutboxDryRun() { return Boolean.parseBoolean( properties.getProperty("outbox-dry-run") ); }
+    public boolean isFileMoveDryRun() { return Boolean.parseBoolean( properties.getProperty("file-move-dry-run") ); }
 }

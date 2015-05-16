@@ -2,8 +2,9 @@ package org.literacybridge.dcp;
 
 import com.dropbox.core.*;
 import com.dropbox.core.http.StandardHttpRequestor;
-import org.literacybridge.dcp.handlers.FileDownloadingTestHandler;
-import org.literacybridge.dcp.handlers.OutboxToInboxMoveHandler;
+import org.literacybridge.dcp.handlers.DropboxFileMoveHandler;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.net.ssl.HttpsURLConnection;
 import java.io.BufferedReader;
@@ -15,6 +16,8 @@ import java.util.Locale;
  * Created by jefflub on 3/21/15.
  */
 public class DropboxChangeProcessor {
+
+    final static Logger logger = LoggerFactory.getLogger( DropboxChangeProcessor.class );
 
     public static void main(String[] args) throws IOException, DbxException, InterruptedException {
 
@@ -45,11 +48,11 @@ public class DropboxChangeProcessor {
         String accessToken = dcpConfig.getAccessToken();
         DbxClient client = new DbxClient(config, accessToken);
 
-        System.out.println("Linked account: " + client.getAccountInfo().displayName);
+        logger.info("Linked account: {}", client.getAccountInfo().displayName);
 
         DropboxDeltaEventDistributor distributor = new DropboxDeltaEventDistributor();
-        distributor.addHandler(new OutboxToInboxMoveHandler(client, dcpConfig));
-        distributor.addHandler(new FileDownloadingTestHandler(client, dcpConfig));
+        distributor.addHandler(new DropboxFileMoveHandler(client, dcpConfig));
+        //distributor.addHandler(new FileDownloadingTestHandler(client, dcpConfig));
 
         DropboxDeltaEventSource eventGenerator = new DropboxDeltaEventSource(client, dcpConfig, distributor);
         eventGenerator.watchDropbox();
