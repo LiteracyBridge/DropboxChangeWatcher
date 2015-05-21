@@ -31,6 +31,8 @@ public class DropboxFileMoveHandler extends AbstractDropboxDeltaEventHandler {
 
     @Override
     public boolean handle(String path, DbxEntry metadata) {
+        // Metadata path has correct capitalization
+        path = metadata.path;
         if ( metadata != null && metadata.isFile() && path.startsWith(sourceRoot) && sourceMatchPattern.matcher(path).matches() )
         {
             String newPath = path.replace(sourceRoot, destinationRoot);

@@ -21,14 +21,14 @@ public class DropboxChangeProcessor {
 
     public static void main(String[] args) throws IOException, DbxException, InterruptedException {
 
-        if (args.length != 1) {
-            System.out.println("Usage: DropboxChangeProcessor <properties file>");
+        if (args.length < 1 || args.length > 2) {
+            System.out.println("Usage: DropboxChangeProcessor <properties file> [<key file>]");
             System.exit(-1);
         }
 
         DcpConfiguration dcpConfig = null;
         try {
-            dcpConfig = new DcpConfiguration(args[0]);
+            dcpConfig = new DcpConfiguration(args[0], args.length == 2 ? args[1] : null);
         } catch (IOException ex) {
             System.out.println("Failed to load properties file " + args[0]);
             ex.printStackTrace();

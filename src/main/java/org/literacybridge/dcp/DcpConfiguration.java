@@ -10,13 +10,17 @@ import java.util.Properties;
 public class DcpConfiguration {
 
     private static final int DEFAULT_DROPBOX_POLL_TIMEOUT = 30;
-    private static final int DEFAULT_CONNECTION_READ_TIMEOUT = 125;
 
     Properties properties;
 
-    public DcpConfiguration(String propertiesFile) throws IOException {
+    public DcpConfiguration(String propertiesFile, String keyFile) throws IOException {
         properties = new Properties();
         properties.load(new FileReader(propertiesFile));
+        if ( keyFile != null ) {
+            if ( getAppKey() != null || getAppSecret() != null || getAccessToken() != null )
+                throw new IOException("Key that should be secret is in main config file!");
+            properties.load(new FileReader(keyFile));
+        }
         if (getAppKey() == null || getAppSecret() == null)
             throw new IOException("AppKey or AppSecret is missing from properties file.");
     }
@@ -31,6 +35,10 @@ public class DcpConfiguration {
 
     public String getAccessToken() {
         return properties.getProperty("dropbox-access-token");
+    }
+
+    public String getConfigFileDropboxLocation() {
+        return properties.getProperty("config-file-dropbox-location");
     }
 
     public int getPollTimeout() {
