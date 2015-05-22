@@ -1,40 +1,83 @@
 package org.literacybridge.dcp;
 
-import java.io.FileReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.Reader;
+import com.dropbox.core.DbxClient;
+import com.dropbox.core.DbxEntry;
+import com.dropbox.core.DbxException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Properties;
 
 /**
  * Configuration values
  */
 public class DcpConfiguration {
+    final static Logger logger = LoggerFactory.getLogger(DcpConfiguration.class);
 
     private static final int DEFAULT_DROPBOX_POLL_TIMEOUT = 30;
 
     Properties properties;
 
-    public DcpConfiguration(String propertiesFile, String keyFile) throws IOException {
-        properties = new Properties();
+    DcpConfiguration()
+    {
+        // Testing only constructor
+    }
 
-        Reader propReader = null;
-        if ( propertiesFile.startsWith("classpath:") ) {
-            String propPath = propertiesFile.substring(propertiesFile.indexOf(":") + 1);
-            propReader = new InputStreamReader(Thread.currentThread().getContextClassLoader().getResourceAsStream(propPath));
+    public DcpConfiguration(String keyFile) throws IOException, DbxException {
+        logger.info( "Loading key file: {}", keyFile );
+        loadPropertiesFile(keyFile);
+        if ( getAppKey() == null || getAppSecret() == null )
+            throw new RuntimeException( "Missing app keys from key file." );
+        if ( getAccessToken() == null ) {
+            // This can be used for generating an access token, but not much else
+            return;
         }
-        else
-            propReader = new FileReader(propertiesFile);
-        properties.load(propReader);
-        propReader.close();
 
-        if ( keyFile != null ) {
-            if ( getAppKey() != null || getAppSecret() != null || getAccessToken() != null )
-                throw new IOException("Key that should be secret is in main config file!");
-            properties.load(new FileReader(keyFile));
+        loadConfigFromDropbox();
+    }
+
+    void loadConfigFromDropbox() throws IOException, DbxException {
+        // If there's a config file in Dropbox, load it. Otherwise assume all config is in the key file
+        if ( getConfigFileDropboxLocation() != null ) {
+            logger.info( "Getting config file from Dropbox. Path: {}", getConfigFileDropboxLocation() );
+            DbxClient client = DropboxChangeProcessor.getDbxClient(this);
+            Path configFilePath = Files.createTempFile("dcp-config-", ".properties");
+            FileOutputStream output = new FileOutputStream(configFilePath.toString());
+            DbxEntry.File configFile = client.getFile(getConfigFileDropboxLocation(), null, output);
+            output.close();
+            if (configFile == null)
+                throw new RuntimeException("Missing Dropbox config file at '" + getConfigFileDropboxLocation() + "'");
+            loadPropertiesFile(configFilePath.toString());
+            Files.delete(configFilePath);
         }
-        if (getAppKey() == null || getAppSecret() == null)
-            throw new IOException("AppKey or AppSecret is missing from properties file.");
+    }
+
+    public DcpConfiguration(String keyFile, String propertiesFile) throws IOException {
+        loadPropertiesFile( propertiesFile );
+        if ( getAppKey() != null || getAppSecret() != null || getAccessToken() != null )
+            throw new IOException("Key that should be secret is in main config file!");
+        loadPropertiesFile( keyFile );
+    }
+
+    void loadPropertiesFile( String filePath ) throws IOException
+    {
+        if ( properties == null ) {
+            properties = new Properties();
+        }
+
+        Reader reader = null;
+        if ( filePath.startsWith( "classpath:" ) ) {
+            String propPath = filePath.substring(filePath.indexOf(":") + 1);
+            reader = new InputStreamReader(Thread.currentThread().getContextClassLoader().getResourceAsStream(propPath));
+        }
+        else {
+            reader = new FileReader( filePath );
+        }
+        properties.load( reader );
+        reader.close();
     }
 
     public String getAppKey() {
@@ -77,7 +120,7 @@ public class DcpConfiguration {
 
     public String getFileMoveFilterRegex() { return properties.getProperty("file-move-source-filter-regex"); }
 
-    public boolean isFileMoveDryRun() { return Boolean.parseBoolean( properties.getProperty("file-move-dry-run") ); }
+    public boolean isFileMoveDryRun() { return Boolean.parseBoolean(properties.getProperty("file-move-dry-run")); }
 
     /**
      * For test purposes.

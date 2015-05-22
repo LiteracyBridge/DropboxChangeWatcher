@@ -19,19 +19,24 @@ A service that watches a Dropbox account and passes changes to a set of actors. 
   process you should get an App Key and App Secret.
 
 ### Building ###
-
     ./gradlew build
     
 will run the build via Gradle Wrapper.
 
-### Testing ###
-There is a small (and growing) set of integration tests that work against Dropbox by creating temporary files. You must
-have gotten an access token for your Dropbox account to run them. 
+### Configuration ###
+Configuration is split into two files. The **Key File** contains application and account secrets and should never be
+shared or checked in to source control. The **Configuration File** contains configuration values and can be shared.
 
-    ./gradlew -DtestKeyFile=<path to key file> integrationTest
+### Testing ###
+There is a small set of integration tests that work against Dropbox by creating temporary files. You must
+have gotten an access token for your Dropbox account to run them. No **Configuration File** is necessary, but you must provide
+a **Key File** with app and account access codes.
+
+    ./gradlew -DtestKeyFile=<path to Key File> integrationTest
+    
+The integration tests still leave a little directory cruft (but no files) that I will eventually clean up :)
 
 ### Running ###
-
 To set up local configuration, copy the example.properties file to a new location. Replace the "dropbox-app-key" and 
 "dropbox-app-secret" with the values from Dropbox. For the first run, comment out the "dropbox-access-token" key.
 
@@ -44,7 +49,6 @@ account. Once you have it, copy it into your properties file. **DO NOT CHECK IN 
 It now has secret keys in it that you don't want distributed publicly.
 
 ### Deployment ###
-
 You can build a deployable version of the app with all dependencies and a startup script by running
 
     ./gradlew clean build installDist

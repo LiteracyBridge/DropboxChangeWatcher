@@ -7,6 +7,7 @@ import com.dropbox.core.DbxWriteMode;
 import org.junit.Test;
 import org.literacybridge.dcp.DcpConfiguration;
 import org.literacybridge.dcp.DropboxChangeProcessor;
+import org.literacybridge.dcp.IntegrationTestUtils;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -29,14 +30,13 @@ public class DropboxFileMoveHandlerIntegrationTest {
         String keyFile = System.getProperty( "testKeyFile" );
         assertNotNull( keyFile, "Missing keyFile system property" );
         System.out.println("Keyfile=" + keyFile);
-        DcpConfiguration config = new DcpConfiguration( "classpath:file-move-integration-config.properties", keyFile );
+        DcpConfiguration config = new DcpConfiguration( keyFile, "classpath:file-move-integration-config.properties" );
 
-        assertNotNull( config.getAccessToken() );
+        assertNotNull(config.getAccessToken());
 
-        DbxClient client = DropboxChangeProcessor.getDbxClient( config );
+        DbxClient client = DropboxChangeProcessor.getDbxClient(config);
 
-        String timestamp = new SimpleDateFormat("yyyy-mm-dd HH.mm.ss").format(new Date());
-        String basePath = "/DcpTests/" + timestamp;
+        String basePath = IntegrationTestUtils.getDropboxTestPath();
         String sourceRoot = basePath + "/source";
         String destinationRoot = basePath + "/destination";
         Path cursorFile = Files.createTempFile("dcp-test-", "-cursor.txt");
@@ -45,11 +45,11 @@ public class DropboxFileMoveHandlerIntegrationTest {
         if ( entry == null )
             throw new RuntimeException( "Couldn't create test folder " + basePath );
 
-        config.overrideProperties(  "file-move-source-root", sourceRoot,
-                                    "file-move-destination-root", destinationRoot,
-                                    "state-file", cursorFile.toString(),
-                                    "one-time-run", "true",
-                                    "file-move-source-filter-regex", ".*txt");
+        config.overrideProperties("file-move-source-root", sourceRoot,
+                "file-move-destination-root", destinationRoot,
+                "state-file", cursorFile.toString(),
+                "one-time-run", "true",
+                "file-move-source-filter-regex", ".*txt");
 
         addFile(client, sourceRoot + "/source-nodelete.txt", 50);
         addFile(client, destinationRoot + "/destination-nodelete.txt", 50);
@@ -58,18 +58,28 @@ public class DropboxFileMoveHandlerIntegrationTest {
         assertTrue(fileExists(client, sourceRoot, "/source-nodelete.txt"));
         assertTrue(fileExists(client, destinationRoot, "/destination-nodelete.txt"));
 
+        // Test a basic move
         addFile(client, sourceRoot + "/MoveMe.txt", 100);
+        // Test that a regex mismatch doesn't move
         addFile(client, sourceRoot + "/DontMoveMe.foo", 100);
+        // Test that a file outside of the sourceroot, but that does regex match, doesn't move
+        addFile(client, basePath + "/DontMoveMeEither.txt", 100);
+        // Test that a file in a subdirectory of the source root moves
+        addFile(client, sourceRoot + "/subdir/IShouldMove.txt", 100);
         runProcessor(config, client);
         assertFalse(fileExists(client, sourceRoot, "/MoveMe.txt"));
         assertTrue(fileExists(client, destinationRoot, "/MoveMe.txt"));
-        assertTrue(fileExists( client, sourceRoot, "/DontMoveMe.foo" ));
+        assertTrue(fileExists(client, sourceRoot, "/DontMoveMe.foo"));
+        assertTrue(fileExists(client, basePath, "/DontMoveMeEither.txt"));
+        assertFalse(fileExists(client, sourceRoot, "/subdir/IShouldMove.txt"));
+        assertTrue(fileExists(client, destinationRoot, "/subdir/IShouldMove.txt"));
+
         // Validate case preservation
         entry = client.getMetadata( destinationRoot + "/moveme.txt" );
         assertEquals( entry.path, destinationRoot + "/MoveMe.txt" );
 
         Files.delete(cursorFile);
-        // client.delete( basePath );
+        client.delete( basePath );
     }
 
     private boolean fileExists( DbxClient client, String root, String path ) throws DbxException

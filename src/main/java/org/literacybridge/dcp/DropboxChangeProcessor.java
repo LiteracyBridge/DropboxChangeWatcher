@@ -22,7 +22,7 @@ public class DropboxChangeProcessor {
     public static void main(String[] args) throws IOException, DbxException, InterruptedException {
 
         if (args.length < 1 || args.length > 2) {
-            System.out.println("Usage: DropboxChangeProcessor <properties file> [<key file>]");
+            System.out.println("Usage: DropboxChangeProcessor <key file> [<configuration file>]");
             System.exit(-1);
         }
 

@@ -4,6 +4,7 @@ import org.junit.Test;
 
 import java.io.IOException;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 /**
@@ -12,15 +13,18 @@ import static org.junit.Assert.assertTrue;
 public class DcpConfigurationTest {
 
     @Test
-    public void testDcpConfiguration() throws Exception
+    public void testDcpConfigurationOneFile() throws Exception
     {
-        DcpConfiguration config = new DcpConfiguration( "classpath:test-config-with-keys.properties", null );
+        DcpConfiguration config = new DcpConfiguration( "classpath:test-config-with-keys.properties" );
         assertTrue( config.getAccessToken() != null );
+        assertEquals( config.getFileMoveSourceRoot(), "/lb-outbox" );
     }
 
-    @Test( expected = IOException.class )
-    public void testInvalidConfiguration() throws Exception
+    @Test
+    public void testDcpConfigurationTwoFiles() throws Exception
     {
-        DcpConfiguration config = new DcpConfiguration( "classpath:test-config-no-keys.properties", null );
+        DcpConfiguration config = new DcpConfiguration( "classpath:test-config-keys-only.properties", "classpath:test-config-no-keys.properties" );
+        assertTrue( config.getAccessToken() != null );
+        assertEquals( config.getFileMoveSourceRoot(), "/lb-outbox" );
     }
 }
