@@ -68,8 +68,10 @@ public class DropboxDeltaEventSource {
         if (config.getStateFileName() != null) {
             try {
                 Path path = Paths.get(config.getStateFileName());
-                if (Files.exists(path))
-                    return new String(Files.readAllBytes(Paths.get(config.getStateFileName())));
+                if (Files.exists(path)) {
+                    String cursor = new String(Files.readAllBytes(Paths.get(config.getStateFileName())));
+                    return cursor.length() == 0 ? null : cursor;
+                }
             } catch (IOException ex) {
                 // Should this fail, or just log and continue?
                 logger.error( "Failed to read saved cursor", ex );

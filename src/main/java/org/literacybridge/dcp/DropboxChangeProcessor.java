@@ -35,6 +35,23 @@ public class DropboxChangeProcessor {
             System.exit(-1);
         }
 
+        DbxClient client = getDbxClient(dcpConfig);
+
+        logger.info("Linked account: {}", client.getAccountInfo().displayName);
+
+        runProcessor(dcpConfig, client);
+    }
+
+    public static void runProcessor(DcpConfiguration dcpConfig, DbxClient client) throws DbxException {
+        DropboxDeltaEventDistributor distributor = new DropboxDeltaEventDistributor();
+        distributor.addHandler(new DropboxFileMoveHandler(client, dcpConfig));
+        //distributor.addHandler(new FileDownloadingTestHandler(client, dcpConfig));
+
+        DropboxDeltaEventSource eventGenerator = new DropboxDeltaEventSource(client, dcpConfig, distributor);
+        eventGenerator.watchDropbox();
+    }
+
+    public static DbxClient getDbxClient(DcpConfiguration dcpConfig) throws IOException, DbxException {
         DbxAppInfo appInfo = new DbxAppInfo(dcpConfig.getAppKey(), dcpConfig.getAppSecret());
 
         DbxRequestConfig config = new DbxRequestConfig("LiteracyBridge DBChangeProcessor/1.0",
@@ -46,16 +63,7 @@ public class DropboxChangeProcessor {
         }
 
         String accessToken = dcpConfig.getAccessToken();
-        DbxClient client = new DbxClient(config, accessToken);
-
-        logger.info("Linked account: {}", client.getAccountInfo().displayName);
-
-        DropboxDeltaEventDistributor distributor = new DropboxDeltaEventDistributor();
-        distributor.addHandler(new DropboxFileMoveHandler(client, dcpConfig));
-        //distributor.addHandler(new FileDownloadingTestHandler(client, dcpConfig));
-
-        DropboxDeltaEventSource eventGenerator = new DropboxDeltaEventSource(client, dcpConfig, distributor);
-        eventGenerator.watchDropbox();
+        return new DbxClient(config, accessToken);
     }
 
     private static void generateOAuthAccessToken(DbxAppInfo appInfo, DbxRequestConfig config) throws IOException, DbxException {
