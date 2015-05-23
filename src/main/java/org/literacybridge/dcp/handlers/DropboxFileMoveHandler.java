@@ -31,14 +31,20 @@ public class DropboxFileMoveHandler extends AbstractDropboxDeltaEventHandler {
 
     @Override
     public boolean handle(String path, DbxEntry metadata) {
+        if ( metadata == null )
+        {
+            // This is a deletion
+            return false;
+        }
+
         // Metadata path has correct capitalization
         path = metadata.path;
-        if ( metadata != null && metadata.isFile() && path.startsWith(sourceRoot) && sourceMatchPattern.matcher(path).matches() )
+        if ( metadata.isFile() && path.startsWith(sourceRoot) && sourceMatchPattern.matcher(path).matches() )
         {
             String newPath = path.replace(sourceRoot, destinationRoot);
             logger.info( "Moving " + path + " to " + newPath + (dryRun ? " *** SKIPPING..." : "" ) );
             try {
-                if ( !dryRun)
+                if ( !dryRun )
                     dbxClient.move( path, newPath );
             } catch (DbxException e) {
                 logger.error("Failed to move file", e);

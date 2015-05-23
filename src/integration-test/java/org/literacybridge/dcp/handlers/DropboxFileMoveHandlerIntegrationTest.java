@@ -53,6 +53,7 @@ public class DropboxFileMoveHandlerIntegrationTest {
 
         addFile(client, sourceRoot + "/source-nodelete.txt", 50);
         addFile(client, destinationRoot + "/destination-nodelete.txt", 50);
+        addFile(client, sourceRoot + "/subdir/source-todelete.txt", 923);
 
         runProcessor(config, client);
         assertTrue(fileExists(client, sourceRoot, "/source-nodelete.txt"));
@@ -66,18 +67,29 @@ public class DropboxFileMoveHandlerIntegrationTest {
         addFile(client, basePath + "/DontMoveMeEither.txt", 100);
         // Test that a file in a subdirectory of the source root moves
         addFile(client, sourceRoot + "/subdir/IShouldMove.txt", 100);
+        // Test that deletions don't blow anything up
+        client.delete(sourceRoot + "/subdir/source-todelete.txt");
+
         runProcessor(config, client);
+        // Did we move the right file?
         assertFalse(fileExists(client, sourceRoot, "/MoveMe.txt"));
         assertTrue(fileExists(client, destinationRoot, "/MoveMe.txt"));
+        // Did we not move the unmatching file?
         assertTrue(fileExists(client, sourceRoot, "/DontMoveMe.foo"));
+        // Did we not move the file outside the source folder?
         assertTrue(fileExists(client, basePath, "/DontMoveMeEither.txt"));
+        // Did we move the file in the subdirectory?
         assertFalse(fileExists(client, sourceRoot, "/subdir/IShouldMove.txt"));
         assertTrue(fileExists(client, destinationRoot, "/subdir/IShouldMove.txt"));
+        // Is the deleted file nowhere to be found?
+        assertFalse(fileExists(client, sourceRoot, "/subdir/source-todelete.txt"));
+        assertFalse(fileExists(client, destinationRoot, "/subdir/source-todelete.txt"));
 
         // Validate case preservation
         entry = client.getMetadata( destinationRoot + "/moveme.txt" );
         assertEquals( entry.path, destinationRoot + "/MoveMe.txt" );
 
+        // Clean up
         Files.delete(cursorFile);
         client.delete( basePath );
     }
