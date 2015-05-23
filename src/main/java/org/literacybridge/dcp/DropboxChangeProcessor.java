@@ -28,7 +28,10 @@ public class DropboxChangeProcessor {
 
         DcpConfiguration dcpConfig = null;
         try {
-            dcpConfig = new DcpConfiguration(args[0], args.length == 2 ? args[1] : null);
+            if ( args.length == 1 )
+                dcpConfig = new DcpConfiguration(args[0]);
+            else
+                dcpConfig = new DcpConfiguration(args[0], args[1]);
         } catch (IOException ex) {
             System.out.println("Failed to load properties file " + args[0]);
             ex.printStackTrace();
