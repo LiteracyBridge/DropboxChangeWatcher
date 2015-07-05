@@ -19,6 +19,11 @@ public abstract class AbstractDropboxDeltaEventHandler {
         this.dcpConfig = dcpConfig;
     }
 
+    /**
+     * Ask a handler to handle a Dropbox delta event
+     * 
+     * @return true if the handler handled it and does not want any other handlers to try
+     */
     public abstract boolean handle(String path, DbxEntry metadata);
 
     /**
