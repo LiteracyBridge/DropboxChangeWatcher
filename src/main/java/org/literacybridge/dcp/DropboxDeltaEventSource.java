@@ -130,11 +130,13 @@ public class DropboxDeltaEventSource {
         do {
             delta = client.getDelta(cursor);
             for (DbxDelta.Entry<DbxEntry> e : delta.entries) {
-                logger.debug("Changed file: {}", e.lcPath);
-                if (e.metadata == null)
-                    logger.debug("File deleted");
-                else
-                    logger.debug("File added/changed");
+                String operation = "Deleted";
+                String type = "";
+                if (e.metadata != null) {
+                  operation = "Added/changed";
+                  type = e.metadata.isFile() ? "file" : "directory";
+                }
+                logger.debug("{} {}: {}", operation, type, e.lcPath);
                 distributor.distributeEvent(e.lcPath, e.metadata);
             }
             cursor = delta.cursor;

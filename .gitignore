@@ -1,3 +1,5 @@
 .gradle
+*.key
+*.iml
 build/
 .idea/

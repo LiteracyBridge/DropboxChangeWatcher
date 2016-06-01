@@ -69,6 +69,8 @@ public class DropboxFileMoveHandlerIntegrationTest {
         addFile(client, sourceRoot + "/subdir/IShouldMove.txt", 100);
         // Test that deletions don't blow anything up
         client.delete(sourceRoot + "/subdir/source-todelete.txt");
+        // Test that we see folder creations
+        client.createFolder(sourceRoot + "/subidr/subsubdir");
 
         runProcessor(config, client);
         // Did we move the right file?
