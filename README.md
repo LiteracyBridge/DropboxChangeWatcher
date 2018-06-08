@@ -1,4 +1,4 @@
-DropboxChangeProcessor
+~~DropboxChangeProcessor~~This project has been deprecated.
 ======================
 
 A service that watches a Dropbox account and passes changes to a set of actors. Much more to come!
